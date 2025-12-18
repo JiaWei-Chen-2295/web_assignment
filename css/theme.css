@@ -1,0 +1,80 @@
+/* 暗色主题 */
+body.dark-theme {
+  --bg-main: #0F1419;
+  --bg-white: #151A21;
+  --border: #2F3741;
+  --text-main: #E8EAED;
+  --text-sub: #9AA0A6;
+  --hover: #1F2329;
+  --mark: #5A4510;
+  --white: #151A21;
+}
+
+body.dark-theme .toolbar,
+body.dark-theme .modal-content,
+body.dark-theme .toast,
+body.dark-theme .section-header,
+body.dark-theme .editor-header {
+  background: #151A21;
+}
+
+body.dark-theme .editor-area,
+body.dark-theme .preview-area,
+body.dark-theme .search-input,
+body.dark-theme .title-input,
+body.dark-theme input[type="text"] {
+  background: #0F1419;
+  color: #E8EAED;
+}
+
+body.dark-theme .stat-card {
+  background: #1F2329;
+}
+
+body.dark-theme code {
+  background: #2F3741;
+}
+
+body.dark-theme pre {
+  background: #0A0E13;
+}
+
+body.dark-theme .add-doc-btn {
+  background: #1F2329;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+body.dark-theme .doc-list,
+body.dark-theme .search-results-container {
+  background: #0F1419;
+  color: #E8EAED;
+}
+
+body.dark-theme .list-item:hover,
+body.dark-theme .book-header:hover,
+body.dark-theme .doc-item:hover,
+body.dark-theme .toolbar button:hover,
+body.dark-theme .btn:hover {
+  background: #2F3741;
+}
+
+body.dark-theme .list-item.active,
+body.dark-theme .doc-item.active {
+  background: #1A3B2E;
+  color: var(--primary);
+}
+
+body.dark-theme .empty-state {
+  color: #9AA0A6;
+}
+
+body.dark-theme .tag {
+  background: #2F3741;
+  color: #9AA0A6;
+}
+
+body.dark-theme .search-results,
+body.dark-theme .backup-item {
+  background: #0F1419;
+}
