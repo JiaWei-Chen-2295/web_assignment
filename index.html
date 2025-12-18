@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>语雀 Lite - 知识库系统</title>
+
+  <!-- 样式引入 -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <!-- 顶部工具栏 -->
+  <header class="toolbar">
+    <div class="left">
+      <span class="logo" onclick="window.location.reload()">📚 语雀 Lite</span>
+      <button onclick="app.showStats()">统计</button>
+    </div>
+    <div class="right">
+      <button onclick="app.showTemplates()">📄 模板</button>
+      <button onclick="app.toggleTheme()">🌓 主题</button>
+      <button onclick="app.createBackup()">💾 备份</button>
+    </div>
+  </header>
+
+  <!-- 主布局 -->
+  <main class="app-layout">
+    <div id="left-panel" class="panel-left"></div>
+    <div id="center-panel" class="panel-center"></div>
+    <div id="main-panel" class="panel-main"></div>
+  </main>
+
+  <!-- 通知容器 -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- 脚本引入（有序） -->
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
