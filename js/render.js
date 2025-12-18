@@ -132,8 +132,8 @@ const Renderer = {
         <div class="empty-state">
           <div class="welcome">
             <h2>📚 语雀 Lite</h2>
-            <p>创建一个文档，开始你的知识管理之旅</p>
-            <button class="btn btn-primary" onclick="app.createDoc()">新建文档</button>
+            <p>清新、简洁、高效的知识管理工具<br>支持 Markdown、全文搜索、数据备份</p>
+            <button class="btn btn-primary" onclick="app.createDoc()">📝 开始写作</button>
           </div>
         </div>
       `;
@@ -148,14 +148,14 @@ const Renderer = {
                oninput="app.updateDocTitle(this.value)"
                placeholder="文档标题...">
         <div class="editor-actions">
-          <button class="btn" onclick="app.toggleDocStatus('${doc.id}')" title="切换发布状态">
+          <button class="btn" onclick="app.toggleDocStatus('${doc.id}')" data-tooltip="切换状态">
             ${doc.status === 'published' ? '设为草稿' : '发布'}
           </button>
-          <button class="btn" onclick="app.togglePreview()">预览</button>
-          <button class="btn btn-primary" onclick="app.saveDoc()">保存</button>
-          <button class="btn" onclick="app.addTag()">添加标签</button>
-          <button class="btn" onclick="app.exportDoc()">导出</button>
-          <button class="btn" onclick="app.deleteDoc('${doc.id}')" style="color: #EF4444; border-color: #EF4444;">删除</button>
+          <button class="btn" onclick="app.togglePreview()" data-tooltip="预览模式">👁️ 预览</button>
+          <button class="btn btn-primary" onclick="app.saveDoc()" data-tooltip="Ctrl+S">💾 保存</button>
+          <button class="btn" onclick="app.addTag()" data-tooltip="添加标签">🏷️ 标签</button>
+          <button class="btn" onclick="app.exportDoc()" data-tooltip="导出为MD">⬇️ 导出</button>
+          <button class="btn btn-danger" onclick="app.deleteDoc('${doc.id}')" data-tooltip="删除文档">🗑️</button>
         </div>
       </div>
       <div class="split-view" id="split-view">

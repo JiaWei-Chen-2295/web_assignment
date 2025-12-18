@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>语雀 Lite - 知识库系统</title>
+  <title>语雀 Lite - 清爽知识库</title>
+  <meta name="description" content="极简设计的知识管理系统，支持Markdown、搜索和模板">
 
   <!-- 样式引入 -->
   <link rel="stylesheet" href="css/base.css">
@@ -16,12 +17,12 @@
   <header class="toolbar">
     <div class="left">
       <span class="logo" onclick="window.location.reload()">语雀 Lite</span>
-      <button onclick="app.showStats()">统计</button>
+      <button onclick="app.showStats()" class="btn" data-tooltip="数据统计">📊 统计</button>
     </div>
     <div class="right">
-      <button onclick="app.showTemplates()">模板</button>
-      <button onclick="app.toggleTheme()">主题</button>
-      <button onclick="app.createBackup()">备份</button>
+      <button onclick="app.showTemplates()" class="btn" data-tooltip="文档模板">📄 模板</button>
+      <button onclick="app.toggleTheme()" class="btn" data-tooltip="切换主题">🌓</button>
+      <button onclick="app.createBackup()" class="btn" data-tooltip="创建备份">💾</button>
     </div>
   </header>
 

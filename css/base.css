@@ -1,27 +1,100 @@
-/* 基础重置 */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* 清爽现代风格 - 基础重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 html, body {
   height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   overflow: hidden;
   background: var(--bg-main);
 }
 
-button { cursor: pointer; border: none; outline: none; background: none; }
-input { outline: none; }
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+}
 
-.hidden { display: none !important; }
+input {
+  outline: none;
+  font-family: inherit;
+}
 
-/* 核心CSS变量 - 亮色主题 */
+.hidden {
+  display: none !important;
+}
+
+/* 全局CSS变量 - 清爽配色 */
 :root {
-  --primary: #25B864;
-  --bg-main: #F7F8FA;
-  --bg-white: #FFFFFF;
-  --border: #E8EAEF;
-  --text-main: #1F2329;
-  --text-sub: #8A9096;
-  --hover: #F0F2F4;
-  --mark: #FFF4CC;
-  --white: #fff;
+  /* 主色调 - 清新薄荷绿 */
+  --primary: #10B981;
+  --primary-hover: #059669;
+  --primary-light: #D1FAE5;
+
+  /* 背景色 - 纯净分层 */
+  --bg-main: #F8FAFC;      /* 最浅灰 - 主背景 */
+  --bg-panel: #FFFFFF;     /* 纯白 - 面板背景 */
+  --bg-hover: #F1F5F9;     /* 悬停背景 */
+  --bg-active: #ECFDF5;    /* 激活状态 */
+
+  /* 边框/分割线 - 柔和 */
+  --border-light: #E2E8F0; /* 轻量边框 */
+  --border-medium: #CBD5E1; /* 中等边框 */
+
+  /* 文字色 - 清晰层次 */
+  --text-primary: #0F172A;   /* 深黑 - 主标题 */
+  --text-secondary: #475569; /* 中灰 - 副标题 */
+  --text-muted: #94A3B8;     /* 浅灰 - 辅助文字 */
+  --text-on-primary: #FFFFFF; /* 按钮文字 */
+
+  /* 状态色 */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+
+  /* 阴影 - 轻柔 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  /* 间距 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  /* 过渡动画 */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-theme {
+  --bg-main: #0B1120;      /* 深蓝灰背景 */
+  --bg-panel: #0F172A;     /* 深色面板 */
+  --bg-hover: #1E293B;     /* 悬停 */
+  --bg-active: #064E3B;    /* 激活 */
+
+  --border-light: #1E293B;
+  --border-medium: #334155;
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
 }
