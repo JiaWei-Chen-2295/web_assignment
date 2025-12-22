@@ -1,12 +1,12 @@
-// 模板系统
+// 模板系统 - 使用 Iconify 图标
 
 const Templates = {
-  // 默认模板集合
+  // 默认模板集合（使用 Iconify 图标）
   defaults: [
     {
       id: 'meeting',
       name: '会议记录',
-      icon: '会议',
+      icon: { set: 'lucide', name: 'users' },
       content: `# 会议记录
 
 > 日期：{{date}}
@@ -30,7 +30,7 @@ const Templates = {
     {
       id: 'daily',
       name: '每日日报',
-      icon: '日报',
+      icon: { set: 'lucide', name: 'clipboard-list' },
       content: `# 工作日报
 
 > 日期：{{date}}
@@ -52,7 +52,7 @@ const Templates = {
     {
       id: 'book',
       name: '读书笔记',
-      icon: '读书',
+      icon: { set: 'lucide', name: 'book-open' },
       content: `# 读书笔记
 
 > 书名：{{book_name}}
@@ -77,7 +77,7 @@ const Templates = {
     {
       id: 'review',
       name: '项目复盘',
-      icon: '复盘',
+      icon: { set: 'lucide', name: 'message-circle-code' },
       content: `# 项目复盘
 
 > 项目：{{name}}

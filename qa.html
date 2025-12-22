@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>语雀 Lite - 智能问答</title>
+  <meta name="description" content="基于本地知识库的问答">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <!-- Iconify 图标库 -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+  <style>
+    body {
+      overflow-y: auto;
+      background: var(--bg);
+    }
+
+    .qa-page {
+      min-height: calc(100vh - 60px);
+      padding: 20px;
+      background: var(--bg);
+    }
+
+    .qa-shell {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .qa-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .qa-header h2 {
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .qa-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .qa-settings {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .qa-settings label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .qa-settings input,
+    .qa-settings select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .qa-input {
+      display: grid;
+      gap: 8px;
+    }
+
+    .qa-input textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .qa-input textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .qa-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qa-answer-card {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      background: var(--bg-contrast);
+      display: grid;
+      gap: 12px;
+    }
+
+    .qa-answer-header {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .qa-answer-pill {
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .qa-answer-empty {
+      padding: 28px 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .qa-answer-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .qa-answer-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      flex: 0 0 36px;
+    }
+
+    .qa-answer-bubble {
+      flex: 1;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .qa-answer-bubble pre {
+      white-space: pre-wrap;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .qa-answer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .qa-answer-card.is-empty .qa-answer-header,
+    .qa-answer-card.is-empty .qa-answer-row {
+      display: none;
+    }
+
+    .qa-answer-card:not(.is-empty) .qa-answer-empty {
+      display: none;
+    }
+
+    .qa-sources {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      background: var(--bg);
+    }
+
+    .qa-sources h3 {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .qa-sources-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .qa-source-item {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-contrast);
+    }
+
+    .qa-source-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .qa-source-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .qa-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .qa-page { padding: 16px; }
+      .qa-shell { padding: 16px; }
+      .qa-actions { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="left">
+      <span class="logo" onclick="window.location.href = 'index.html'">
+        <span class="iconify" data-icon="lucide:book-open" data-width="20"></span> 语雀 Lite
+      </span>
+      <span class="btn" style="cursor: default;">智能问答</span>
+    </div>
+    <div class="right">
+      <button onclick="app.toggleTheme()" class="btn" data-tooltip="切换主题">
+        <span class="iconify" data-icon="lucide:moon" data-width="16"></span>
+      </button>
+      <button onclick="window.location.href='editor.html'" class="btn" data-tooltip="返回编辑器">
+        <span class="iconify" data-icon="lucide:edit-3" data-width="16"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="qa-page">
+    <div class="qa-shell">
+      <div class="qa-header">
+        <h2>知识库问答</h2>
+        <div class="qa-meta">文档总数：<span id="qa-doc-count">0</span></div>
+      </div>
+
+      <div class="qa-settings">
+        <label>
+          API Key
+          <input type="password" id="qa-api-key" placeholder="请输入 API Key">
+        </label>
+        <label>
+          模型
+          <input type="text" id="qa-model" value="mimo-v2-flash" readonly>
+        </label>
+        <label>
+          Base URL
+          <input type="text" id="qa-base-url" value="https://api.xiaomimimo.com/v1" readonly>
+        </label>
+        <label>
+          结果数量
+          <select id="qa-topk">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+      </div>
+      <div class="qa-note">API Key 将保存在本地浏览器，仅用于本地问答。</div>
+
+      <div class="qa-input">
+        <textarea id="qa-question" placeholder="请输入你的问题，例如：如何管理工作区和文档？"></textarea>
+        <div class="qa-actions">
+          <div class="qa-note">问题只会使用本地知识库上下文回答。</div>
+          <button class="btn btn-primary" id="qa-ask">提问</button>
+        </div>
+      </div>
+
+      <div class="qa-answer-card is-empty">
+        <div class="qa-answer-header">
+          <span class="qa-answer-pill">你知道了什么</span>
+        </div>
+        <div class="qa-answer-empty">等待提问...</div>
+        <div class="qa-answer-row">
+          <div class="qa-answer-avatar">
+            <span class="iconify" data-icon="lucide:sparkles" data-width="18"></span>
+          </div>
+          <div class="qa-answer-bubble">
+            <pre id="qa-answer"></pre>
+            <div class="qa-answer-actions">
+              <button class="btn-icon" id="qa-refresh" data-tooltip="重新生成">
+                <span class="iconify" data-icon="lucide:refresh-ccw" data-width="16"></span>
+              </button>
+              <button class="btn-icon" id="qa-copy" data-tooltip="复制回答">
+                <span class="iconify" data-icon="lucide:copy" data-width="16"></span>
+              </button>
+              <button class="btn" id="qa-generate">生成文档</button>
+              <button class="btn btn-primary" id="qa-save">保存到小记</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-sources">
+        <h3>参考来源</h3>
+        <div id="qa-sources-list" class="qa-sources-list qa-note">暂无</div>
+      </div>
+    </div>
+  </main>
+
+  <toast-notification id="toast"></toast-notification>
+
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app-base.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/components/toast-notification.js"></script>
+
+  <script type="module">
+    const KEY_STORAGE = 'yuque-lite-openai-key';
+    const MODEL_NAME = 'mimo-v2-flash';
+    const BASE_URL = 'http://localhost:3000/api';
+    const LANGCHAIN_TIMEOUT = 30000;
+
+    async function loadLangChain() {
+      const [openaiMod, messageMod, promptMod] = await Promise.all([
+        import('https://cdn.jsdelivr.net/npm/@langchain/openai/+esm'),
+        import('https://cdn.jsdelivr.net/npm/@langchain/core/+esm'),
+        import('https://cdn.jsdelivr.net/npm/@langchain/core/prompts/+esm')
+      ]);
+      return {
+        ChatOpenAI: openaiMod.ChatOpenAI,
+        HumanMessage: messageMod.HumanMessage,
+        SystemMessage: messageMod.SystemMessage,
+        ChatPromptTemplate: promptMod.ChatPromptTemplate
+      };
+    }
+
+    class QaApp extends window.AppBase {
+      constructor() {
+        super();
+        this.data = window.DataAPI.load();
+        this.toast = document.getElementById('toast');
+        this.answerEl = document.getElementById('qa-answer');
+        this.answerCard = document.querySelector('.qa-answer-card');
+        this.sourcesEl = document.getElementById('qa-sources-list');
+        this.apiKeyInput = document.getElementById('qa-api-key');
+        this.modelInput = document.getElementById('qa-model');
+        this.baseUrlInput = document.getElementById('qa-base-url');
+        this.topkSelect = document.getElementById('qa-topk');
+        this.questionInput = document.getElementById('qa-question');
+        this.askBtn = document.getElementById('qa-ask');
+        this.docCountEl = document.getElementById('qa-doc-count');
+        this.refreshBtn = document.getElementById('qa-refresh');
+        this.copyBtn = document.getElementById('qa-copy');
+        this.generateBtn = document.getElementById('qa-generate');
+        this.saveBtn = document.getElementById('qa-save');
+        this.langchain = null;
+        this.applyTheme();
+        this.loadKey();
+        this.updateDocCount();
+        this.bindEvents();
+      }
+
+      bindEvents() {
+        this.askBtn.addEventListener('click', () => this.ask());
+        this.questionInput.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            this.ask();
+          }
+        });
+        this.apiKeyInput.addEventListener('change', () => this.saveKey());
+        if (this.refreshBtn) this.refreshBtn.addEventListener('click', () => this.ask());
+        if (this.copyBtn) this.copyBtn.addEventListener('click', () => this.copyAnswer());
+        if (this.generateBtn) this.generateBtn.addEventListener('click', () => {
+          this.showToast('生成文档功能待接入', 'info');
+        });
+        if (this.saveBtn) this.saveBtn.addEventListener('click', () => {
+          this.showToast('保存到小记功能待接入', 'info');
+        });
+      }
+
+      updateDocCount() {
+        const stats = window.DataAPI.getStats(this.data);
+        this.docCountEl.textContent = stats.docCount;
+      }
+
+      loadKey() {
+        const saved = localStorage.getItem(KEY_STORAGE);
+        if (saved) this.apiKeyInput.value = saved;
+      }
+
+      saveKey() {
+        const value = this.apiKeyInput.value.trim();
+        if (!value) return;
+        localStorage.setItem(KEY_STORAGE, value);
+        this.showToast('API Key 已保存', 'success');
+      }
+
+      extractAnswer(response) {
+        if (!response) return '';
+        if (typeof response === 'string') {
+          const trimmed = response.trim();
+          if (trimmed.startsWith('{') && trimmed.includes('"choices"')) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              return this.extractAnswer(parsed);
+            } catch (error) {
+              return response;
+            }
+          }
+          return response;
+        }
+        if (response.content) return response.content;
+        if (response.message?.content) return response.message.content;
+        if (Array.isArray(response.choices) && response.choices.length > 0) {
+          const choice = response.choices[0] || {};
+          return choice?.message?.content || choice?.delta?.content || choice?.text || '';
+        }
+        if (response.output_text) return response.output_text;
+        return '';
+      }
+
+      setAnswerState(text) {
+        if (this.answerCard) this.answerCard.classList.remove('is-empty');
+        if (this.answerEl) this.answerEl.textContent = text;
+      }
+
+      async copyAnswer() {
+        const text = this.answerEl?.textContent?.trim();
+        if (!text) {
+          this.showToast('暂无回答可复制', 'warning');
+          return;
+        }
+        if (!navigator.clipboard) {
+          this.showToast('当前环境不支持复制', 'warning');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          this.showToast('回答已复制', 'success');
+        } catch (error) {
+          console.error(error);
+          this.showToast('复制失败，请手动选择文本', 'error');
+        }
+      }
+
+      async ensureLangChain() {
+        if (this.langchain) return true;
+        this.setAnswerState('正在加载问答组件...');
+        try {
+          this.langchain = await loadLangChain();
+          return true;
+        } catch (error) {
+          console.error(error);
+          const message = error?.message || '加载失败';
+          this.setAnswerState(`组件加载失败：${message}`);
+          this.showToast('问答组件加载失败', 'error');
+          return false;
+        }
+      }
+
+      withTimeout(promise, timeoutMs) {
+        let timer = null;
+        const timeout = new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('请求超时，请稍后重试')), timeoutMs);
+        });
+        return Promise.race([promise, timeout]).finally(() => {
+          if (timer) clearTimeout(timer);
+        });
+      }
+
+      getModel() {
+        const apiKey = this.apiKeyInput.value.trim();
+        if (!apiKey) {
+          this.showToast('请输入 API Key', 'warning');
+          return null;
+        }
+        return new this.langchain.ChatOpenAI({
+          apiKey: apiKey,
+          model: MODEL_NAME,
+          temperature: 0.2,
+          configuration: {
+            baseURL: BASE_URL,
+            dangerouslyAllowBrowser: true
+          }
+        });
+      }
+
+      buildContext(question) {
+        window.SearchEngine.rebuildIndex(this.data);
+        const topk = Number(this.topkSelect.value) || 4;
+        const results = window.SearchEngine.search(this.data, question).slice(0, topk);
+        const sources = results.map((item, index) => {
+          const doc = window.DataAPI.findDoc(this.data, item.id);
+          const content = doc ? (doc.content || '') : '';
+          const plain = window.MarkdownRenderer.getPlainText(content);
+          return {
+            id: item.id,
+            title: item.title,
+            bookTitle: item.bookTitle,
+            content: plain.slice(0, 1200),
+            rank: index + 1
+          };
+        });
+        const context = sources.map(source => {
+          const header = `[${source.rank}] ${source.title} (${source.bookTitle})`;
+          return `${header}\n${source.content}`;
+        }).join('\n\n');
+        return { context, sources };
+      }
+
+      renderSources(sources) {
+        if (!sources.length) {
+          this.sourcesEl.textContent = '暂无';
+          return;
+        }
+        this.sourcesEl.innerHTML = sources.map(source => `
+          <div class="qa-source-item">
+            <div class="qa-source-title">[${source.rank}] ${window.escapeHTML(source.title)}</div>
+            <div class="qa-source-meta">${window.escapeHTML(source.bookTitle || '')}</div>
+          </div>
+        `).join('');
+      }
+
+      async ask() {
+        const question = this.questionInput.value.trim();
+        if (!question) {
+          this.showToast('请输入问题内容', 'warning');
+          return;
+        }
+
+        const ready = await this.ensureLangChain();
+        if (!ready) return;
+
+        const model = this.getModel();
+        if (!model) {
+          this.setAnswerState('请输入 API Key');
+          return;
+        }
+
+        this.setAnswerState('正在生成回答...');
+
+        const { context, sources } = this.buildContext(question);
+        this.renderSources(sources);
+
+        try {
+          const prompt = this.langchain.ChatPromptTemplate.fromMessages([
+            [
+              'system',
+              [
+                '你是语雀 Lite 的知识库助手。',
+                '只能基于提供的资料回答问题，如果资料不足以回答，请明确说明“资料不足”。',
+                '回答保持简洁，必要时用要点列出。'
+              ].join('\n')
+            ],
+            [
+              'human',
+              [
+                '问题：{question}',
+                '',
+                '资料：',
+                '{context}'
+              ].join('\n')
+            ]
+          ]);
+          const chain = prompt.pipe(model);
+          const response = await this.withTimeout(
+            chain.invoke({
+              question,
+              context: context || '（当前知识库没有相关资料）'
+            }),
+            LANGCHAIN_TIMEOUT
+          );
+          const content = this.extractAnswer(response);
+          this.setAnswerState(content || '未返回内容');
+        } catch (error) {
+          console.error(error);
+          const message = error?.message || '未知错误';
+          this.setAnswerState(`请求失败：${message}`);
+          this.showToast('问答请求失败', 'error');
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      window.app = new QaApp();
+    });
+  </script>
+</body>
+</html>

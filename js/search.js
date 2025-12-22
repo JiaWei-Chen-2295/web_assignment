@@ -112,3 +112,5 @@ const SearchEngine = {
     this.buildIndex(data);
   }
 };
+
+globalThis.SearchEngine = SearchEngine;

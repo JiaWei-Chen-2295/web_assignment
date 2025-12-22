@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>语雀 Lite - 小记素材</title>
+  <meta name="description" content="小记素材管理">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <!-- Iconify 图标库 -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+  <style>
+    body { overflow-y: auto; }
+    .snippet-page {
+      min-height: calc(100vh - 60px);
+      padding: 20px;
+      background: var(--bg-contrast);
+    }
+    .snippet-shell {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .snippet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .snippet-header h2 {
+      font-size: 18px;
+      color: var(--text);
+    }
+    .snippet-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="left">
+      <span class="logo" onclick="window.location.href = 'index.html'">
+        <span class="iconify" data-icon="lucide:book-open" data-width="20"></span> 语雀 Lite
+      </span>
+      <span class="btn" style="cursor: default;">小记素材</span>
+    </div>
+    <div class="right">
+      <button onclick="app.toggleTheme()" class="btn" data-tooltip="切换主题">
+        <span class="iconify" data-icon="lucide:moon" data-width="16"></span>
+      </button>
+      <button onclick="window.location.href='editor.html'" class="btn" data-tooltip="返回编辑器">
+        <span class="iconify" data-icon="lucide:edit-3" data-width="16"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="snippet-page">
+    <div class="snippet-shell">
+      <div class="snippet-header">
+        <h2>小记素材</h2>
+        <div class="snippet-count">共 <span id="snippet-count">0</span> 条</div>
+      </div>
+      <div class="snippet-manager">
+        <div class="snippet-form">
+          <input type="text" id="snippet-title" placeholder="标题（可选）">
+          <textarea id="snippet-content" rows="4" placeholder="记录一段素材，之后可插入文档"></textarea>
+          <button class="btn btn-primary" id="snippet-save">保存小记</button>
+        </div>
+        <div class="snippet-list" id="snippet-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <toast-notification id="toast"></toast-notification>
+
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app-base.js"></script>
+  <script src="js/components/toast-notification.js"></script>
+
+  <script>
+    const SNIPPET_KEY = 'yuque-lite-snippets';
+
+    class SnippetApp extends AppBase {
+      constructor() {
+        super();
+        this.data = DataAPI.load();
+        this.toast = document.getElementById('toast');
+        this.listEl = document.getElementById('snippet-list');
+        this.countEl = document.getElementById('snippet-count');
+        this.applyTheme();
+        this.bindEvents();
+        this.render();
+      }
+
+      bindEvents() {
+        const saveBtn = document.getElementById('snippet-save');
+        if (saveBtn) saveBtn.addEventListener('click', () => this.addSnippet());
+      }
+
+      getSnippets() {
+        const raw = localStorage.getItem(SNIPPET_KEY);
+        return raw ? JSON.parse(raw) : [];
+      }
+
+      saveSnippets(list) {
+        localStorage.setItem(SNIPPET_KEY, JSON.stringify(list));
+      }
+
+      render() {
+        const snippets = this.getSnippets();
+        this.countEl.textContent = snippets.length;
+
+        if (!snippets.length) {
+          this.listEl.innerHTML = '<div class="empty-state">暂无小记</div>';
+          return;
+        }
+
+        this.listEl.innerHTML = snippets.map(item => {
+          const title = escapeHTML(item.title || '未命名小记');
+          const content = escapeHTML((item.content || '').trim()).replace(/\n+/g, ' ');
+          const created = item.created ? formatDate(item.created) : '';
+          return `
+            <div class="snippet-item" data-id="${item.id}">
+              <div class="snippet-body">
+                <div class="snippet-title">${title}</div>
+                <div class="snippet-preview">${content || '无内容'}</div>
+                <div class="snippet-meta">${created}</div>
+              </div>
+              <div class="snippet-actions">
+                <button class="btn btn-primary" data-action="insert" data-id="${item.id}">插入</button>
+                <button class="btn" data-action="delete" data-id="${item.id}">删除</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        this.listEl.querySelectorAll('[data-action="insert"]').forEach(btn => {
+          btn.addEventListener('click', () => this.insertSnippet(btn.dataset.id));
+        });
+
+        this.listEl.querySelectorAll('[data-action="delete"]').forEach(btn => {
+          btn.addEventListener('click', () => this.deleteSnippet(btn.dataset.id));
+        });
+      }
+
+      addSnippet() {
+        const titleInput = document.getElementById('snippet-title');
+        const contentInput = document.getElementById('snippet-content');
+        const content = contentInput ? contentInput.value : '';
+        if (!content || !content.trim()) {
+          this.showToast('请输入小记内容', 'warning');
+          return;
+        }
+
+        const list = this.getSnippets();
+        list.unshift({
+          id: uuid(),
+          title: titleInput ? titleInput.value.trim() : '',
+          content: content,
+          created: new Date().toISOString()
+        });
+        this.saveSnippets(list);
+
+        if (titleInput) titleInput.value = '';
+        if (contentInput) contentInput.value = '';
+        this.showToast('小记已保存', 'success');
+        this.render();
+      }
+
+      deleteSnippet(id) {
+        if (!id) return;
+        if (!confirm('确定删除该小记？')) return;
+        const list = this.getSnippets().filter(item => item.id !== id);
+        this.saveSnippets(list);
+        this.showToast('小记已删除', 'success');
+        this.render();
+      }
+
+      insertSnippet(id) {
+        if (!id) return;
+        const snippet = this.getSnippets().find(item => item.id === id);
+        if (!snippet) return;
+
+        const data = DataAPI.load();
+        const doc = DataAPI.findDoc(data, data.active.docId);
+        if (!doc) {
+          this.showToast('请先在编辑器打开文档', 'warning');
+          return;
+        }
+
+        const baseContent = doc.content || '';
+        const cleanContent = (snippet.content || '').trim();
+        if (!cleanContent) {
+          this.showToast('小记内容为空', 'warning');
+          return;
+        }
+
+        const separator = baseContent && !baseContent.endsWith('\n') ? '\n\n' : '';
+        const insertText = `${cleanContent}\n`;
+        DataAPI.updateDoc(data, doc.id, baseContent + separator + insertText);
+        this.showToast('已插入到当前文档', 'success');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      window.app = new SnippetApp();
+    });
+  </script>
+</body>
+</html>

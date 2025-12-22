@@ -3,46 +3,886 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>语雀 Lite - 清爽知识库</title>
-  <meta name="description" content="极简设计的知识管理系统，支持Markdown、搜索和模板">
+  <title>语雀 Lite - 知识空间</title>
+  <meta name="description" content="语雀 Lite - 极简知识管理系统">
 
-  <!-- 样式引入 -->
+  <!-- 基础样式 -->
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/theme.css">
+
+  <!-- Iconify 图标库 -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+  <style>
+    /* 首页专用样式 - 全屏简约布局 */
+    body {
+      background: var(--bg, #FFFFFF);
+      overflow-y: auto;
+    }
+
+    /* 全屏容器 */
+    .home-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 首页头部 */
+    .home-header {
+      background: var(--bg, #FFFFFF);
+      border-bottom: 1px solid var(--border, #E5E7EB);
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text, #111827);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      font-size: 24px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border, #E5E7EB);
+      background: var(--bg, #FFFFFF);
+      color: var(--text, #111827);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--bg-contrast, #F9FAFB);
+      border-color: var(--border-hover, #D1D5DB);
+    }
+
+    .btn-primary {
+      background: var(--primary, #10B981);
+      color: white;
+      border-color: var(--primary, #10B981);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover, #059669);
+      border-color: var(--primary-hover, #059669);
+    }
+
+    /* 工具栏 - 排序和过滤 */
+    .home-toolbar {
+      padding: 16px 40px;
+      background: var(--bg-contrast, #F9FAFB);
+      border-bottom: 1px solid var(--border, #E5E7EB);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sort-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sort-label {
+      font-size: 12px;
+      color: var(--text-muted, #6B7280);
+    }
+
+    .sort-btn {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border, #E5E7EB);
+      background: var(--bg, #FFFFFF);
+      color: var(--text, #111827);
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sort-btn:hover {
+      background: var(--bg-contrast, #F9FAFB);
+    }
+
+    .sort-btn.active {
+      background: var(--primary, #10B981);
+      color: white;
+      border-color: var(--primary, #10B981);
+    }
+
+    .workspace-count {
+      font-size: 12px;
+      color: var(--text-muted, #6B7280);
+    }
+
+    /* 主内容区域 */
+    .home-content {
+      padding: 24px 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      align-content: start;
+      flex: 1;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted, #6B7280);
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+      display: flex;
+      justify-content: center;
+    }
+    .empty-icon .iconify {
+      font-size: 64px;
+    }
+
+    .empty-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text, #111827);
+      margin-bottom: 8px;
+    }
+
+    .empty-text {
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* 工作区卡片 */
+    .workspace-card {
+      background: var(--bg, #FFFFFF);
+      border: 1px solid var(--border, #E5E7EB);
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      cursor: pointer;
+    }
+
+    .workspace-card:hover {
+      border-color: var(--border-hover, #D1D5DB);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .card-header {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .workspace-emoji {
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      background: var(--bg-contrast, #F9FAFB);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .workspace-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .workspace-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text, #111827);
+      margin-bottom: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .workspace-desc {
+      font-size: 12px;
+      color: var(--text-muted, #6B7280);
+      margin-bottom: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-height: 16px;
+    }
+
+    .workspace-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    .stat-tag {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--bg-contrast, #F9FAFB);
+      border: 1px solid var(--border, #E5E7EB);
+      color: var(--text-muted, #6B7280);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .workspace-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid var(--border, #E5E7EB);
+      padding-top: 12px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 8px 12px;
+      text-align: center;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border, #E5E7EB);
+      background: var(--bg, #FFFFFF);
+      color: var(--text, #111827);
+    }
+
+    .action-btn.primary {
+      background: var(--primary, #10B981);
+      border-color: var(--primary, #10B981);
+      color: white;
+      font-weight: 600;
+    }
+
+    .action-btn.primary:hover {
+      background: var(--primary-hover, #059669);
+    }
+
+    .action-btn:hover {
+      background: var(--bg-contrast, #F9FAFB);
+    }
+
+    .action-btn.danger:hover {
+      background: var(--bg-contrast, #F9FAFB);
+      border-color: var(--border-hover, #D1D5DB);
+      color: var(--text, #111827);
+    }
+
+    /* 统计显示 */
+    .global-stats {
+      background: var(--bg, #FFFFFF);
+      border: 1px solid var(--border, #E5E7EB);
+      border-radius: 8px;
+      padding: 16px;
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 16px;
+      flex-wrap: nowrap;
+    }
+
+    .global-stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--bg-contrast, #F9FAFB);
+      flex: 0 0 auto;
+    }
+
+    .global-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text, #111827);
+    }
+
+    .global-stat-label {
+      font-size: 11px;
+      color: var(--text-muted, #6B7280);
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+      .home-header, .home-toolbar, .home-content {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .home-content {
+        grid-template-columns: 1fr;
+      }
+
+      .brand {
+        font-size: 16px;
+      }
+
+      .workspace-card {
+        padding: 16px;
+      }
+    }
+
+    /* Toast 通知 */
+    toast-notification {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      z-index: 9999;
+    }
+  </style>
 </head>
 <body>
-  <!-- 顶部工具栏 -->
-  <header class="toolbar">
-    <div class="left">
-      <span class="logo" onclick="window.location.reload()">语雀 Lite</span>
-      <button onclick="app.showStats()" class="btn" data-tooltip="数据统计">📊 统计</button>
+  <!-- 首页容器 -->
+  <div class="home-container" id="home-app">
+    <!-- 头部 -->
+    <header class="home-header">
+      <div class="brand">
+        <span class="brand-icon"><span class="iconify" data-icon="lucide:book-open" style="font-size: 24px;"></span></span>
+        <span>语雀 Lite</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="window.location.href='trash.html'" title="回收站">
+          <span class="iconify" data-icon="lucide:trash-2" data-width="16"></span>
+        </button>
+        <button class="btn" onclick="app.showStats()" title="数据统计">
+          <span class="iconify" data-icon="lucide:bar-chart-3" data-width="16"></span>
+        </button>
+        <button class="btn" onclick="app.toggleTheme()" title="切换主题">
+          <span class="iconify" data-icon="lucide:moon" data-width="16"></span>
+        </button>
+        <button class="btn" onclick="app.createBackup()" title="创建备份">
+          <span class="iconify" data-icon="lucide:save" data-width="16"></span>
+        </button>
+        <button class="btn" onclick="app.showBackupManager()" title="备份管理">
+          <span class="iconify" data-icon="lucide:archive" data-width="16"></span>
+        </button>
+        <button class="btn" onclick="window.location.href='qa.html'" title="知识库问答">
+          <span class="iconify" data-icon="lucide:messages-square" data-width="16"></span>
+        </button>
+        <button class="btn btn-primary" onclick="app.createWorkspace()" title="新建知识空间">
+          <span class="iconify" data-icon="lucide:plus" data-width="16"></span> 新建空间
+        </button>
+      </div>
+    </header>
+
+    <!-- 工具栏 -->
+    <div class="home-toolbar">
+      <div class="workspace-count" id="ws-count">加载中...</div>
+      <div class="sort-controls">
+        <span class="sort-label">排序:</span>
+        <button class="sort-btn active" data-method="created">
+          <span class="iconify" data-icon="lucide:clock" data-width="14"></span> 最新
+        </button>
+        <button class="sort-btn" data-method="name">
+          <span class="iconify" data-icon="lucide:alphabet" data-width="14"></span> 名称
+        </button>
+        <button class="sort-btn" data-method="bookCount">
+          <span class="iconify" data-icon="lucide:layers" data-width="14"></span> 数量
+        </button>
+      </div>
     </div>
-    <div class="right">
-      <button onclick="app.showTemplates()" class="btn" data-tooltip="文档模板">📄 模板</button>
-      <button onclick="app.toggleTheme()" class="btn" data-tooltip="切换主题">🌓</button>
-      <button onclick="app.createBackup()" class="btn" data-tooltip="创建备份">💾</button>
-    </div>
-  </header>
 
-  <!-- 主布局 -->
-  <main class="app-layout">
-    <div id="left-panel" class="panel-left"></div>
-    <div id="center-panel" class="panel-center"></div>
-    <div id="main-panel" class="panel-main"></div>
-  </main>
+    <!-- 主内容网格 -->
+    <main class="home-content" id="content-area">
+      <!-- 动态内容 -->
+    </main>
+  </div>
 
-  <!-- 通知容器 -->
-  <div id="toast-container" class="toast-container"></div>
+  <!-- Toast 通知 -->
+  <toast-notification id="toast"></toast-notification>
 
-  <!-- 脚本引入（有序） -->
+  <!-- 脚本引入 -->
   <script src="js/utils.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/markdown.js"></script>
+  <script src="js/app-base.js"></script>
   <script src="js/search.js"></script>
-  <script src="js/render.js"></script>
+  <script src="js/components/toast-notification.js"></script>
+  <script src="js/ui-renderer.js"></script>
   <script src="js/templates.js"></script>
-  <script src="js/main.js"></script>
+
+  <!-- 首页应用逻辑 -->
+  <script>
+    // 首页应用类 - 处理知识空间展示和操作
+    class HomeApp extends AppBase {
+      constructor() {
+        super();
+        this.sortMethod = 'created';
+        this.toast = document.getElementById('toast');
+        this.init();
+      }
+
+      init() {
+        try {
+          // 加载数据
+          this.data = DataAPI.load();
+
+          // 应用主题
+          this.applyTheme();
+
+          // 绑定排序按钮
+          this.bindSortButtons();
+
+          // 首次渲染
+          this.render();
+
+          // 绑定全局快捷键
+          this.bindShortcuts();
+
+          // 自动创建备份
+          this.autoBackup();
+
+          // 延迟显示欢迎
+          setTimeout(() => {
+            this.showToast('欢迎回到语雀 Lite', 'success');
+          }, 500);
+
+        } catch (error) {
+          console.error('初始化失败:', error);
+          document.getElementById('content-area').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">
+                <span class="iconify" data-icon="lucide:alert-triangle" data-width="64"></span>
+              </div>
+              <div class="empty-title">初始化失败</div>
+              <div class="empty-text">${error.message}</div>
+              <button class="btn btn-primary" onclick="location.reload()">刷新重试</button>
+            </div>
+          `;
+        }
+      }
+
+      // 渲染主界面
+      render() {
+        const workspaces = DataAPI.getSortedWorkspacesWithStats(this.data, this.sortMethod);
+        const contentArea = document.getElementById('content-area');
+        const countEl = document.getElementById('ws-count');
+
+        // 更新计数
+        if (countEl) {
+          countEl.textContent = workspaces.length > 0
+            ? `共 ${workspaces.length} 个知识空间`
+            : '暂无知识空间';
+        }
+
+        // 空状态
+        if (workspaces.length === 0) {
+          contentArea.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">
+                <span class="iconify" data-icon="lucide:book-open"></span>
+              </div>
+              <div class="empty-title">欢迎使用语雀 Lite</div>
+              <div class="empty-text">创建您的第一个知识空间，开始整理文档之旅</div>
+              <button class="btn btn-primary" onclick="app.createWorkspace()">立即创建</button>
+            </div>
+          `;
+          return;
+        }
+
+        // 渲染工作区卡片 + 全局统计
+        const html = this.renderGlobalStats() + workspaces.map(ws => this.renderWorkspaceCard(ws)).join('');
+        contentArea.innerHTML = html;
+
+        // 绑定事件
+        this.bindCardEvents();
+        if (window.enableHorizontalWheelScroll) {
+          window.enableHorizontalWheelScroll(contentArea);
+        }
+        if (window.animateCounts) {
+          window.animateCounts(contentArea);
+        }
+      }
+
+      // 渲染全局统计
+      renderGlobalStats() {
+        const stats = DataAPI.getStats(this.data);
+        if (stats.docCount === 0 && stats.bookCount === 0) return '';
+
+        return `
+          <div class="global-stats stats-scroll" data-wheel-scroll="x">
+            <div class="global-stat-item">
+              <div class="global-stat-value" data-count="${stats.bookCount}">${stats.bookCount}</div>
+              <div class="global-stat-label">书本总数</div>
+            </div>
+            <div class="global-stat-item">
+              <div class="global-stat-value" data-count="${stats.docCount}">${stats.docCount}</div>
+              <div class="global-stat-label">文档总数</div>
+            </div>
+            <div class="global-stat-item">
+              <div class="global-stat-value" data-count="${stats.wordCount}" data-format="word">${formatWordCount(stats.wordCount)}</div>
+              <div class="global-stat-label">总字数</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 渲染单个工作区卡片
+      renderWorkspaceCard(ws) {
+        const iconName = ws.icon || 'lucide:folder';
+        return `
+          <div class="workspace-card" data-id="${ws.id}">
+            <div class="card-header">
+              <div class="workspace-emoji">
+                <span class="iconify" data-icon="${iconName}" data-width="22"></span>
+              </div>
+              <div class="workspace-info">
+                <div class="workspace-name">${ws.name}</div>
+                ${ws.description ? `<div class="workspace-desc">${ws.description}</div>` : ''}
+                <div class="workspace-stats stats-scroll" data-wheel-scroll="x">
+                  <span class="stat-tag"><span class="iconify" data-icon="lucide:book-open" data-width="12"></span>${ws.bookCount} 书本</span>
+                  <span class="stat-tag"><span class="iconify" data-icon="lucide:file-text" data-width="12"></span>${ws.docCount} 文档</span>
+                  ${ws.lastUpdated ? `<span class="stat-tag"><span class="iconify" data-icon="lucide:clock" data-width="12"></span>${this.formatRelative(ws.lastUpdated)}</span>` : ''}
+                  <span class="stat-tag"><span class="iconify" data-icon="lucide:calendar" data-width="12"></span>${this.formatCreated(ws.created)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="workspace-actions">
+              <button class="action-btn primary" onclick="app.openWorkspace('${ws.id}')"><span class="iconify" data-icon="lucide:external-link" data-width="14"></span> 打开</button>
+              <button class="action-btn danger" onclick="app.deleteWorkspace('${ws.id}')"><span class="iconify" data-icon="lucide:trash-2" data-width="14"></span> 删除</button>
+            </div>
+          </div>
+        `;
+      }
+
+      // 事件绑定
+      bindSortButtons() {
+        const buttons = document.querySelectorAll('.sort-btn');
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const method = btn.dataset.method;
+            this.sortMethod = method;
+
+            // 更新按钮状态
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 重新渲染
+            this.render();
+            const iconMap = {
+              'created': 'lucide:clock',
+              'name': 'lucide:alphabet',
+              'bookCount': 'lucide:layers'
+            };
+            this.showToast(`已按 ${this.getMethodName(method)} 排序`, 'info');
+          });
+        });
+      }
+
+      bindCardEvents() {
+        // 卡片点击打开
+        const cards = document.querySelectorAll('.workspace-card');
+        cards.forEach(card => {
+          card.addEventListener('click', (e) => {
+            // 防止点击按钮时触发
+            if (e.target.tagName === 'BUTTON') return;
+            this.openWorkspace(card.dataset.id);
+          });
+        });
+      }
+
+      // 快捷键
+      bindShortcuts() {
+        document.addEventListener('keydown', (e) => {
+          // Esc: 关闭模态框
+          if (e.key === 'Escape') {
+            this.closeModal();
+          }
+
+          // Ctrl/Cmd + N: 新建工作区
+          if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            this.createWorkspace();
+          }
+
+          // Ctrl/Cmd + B: 主题切换
+          if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+            this.toggleTheme();
+          }
+
+          // Ctrl/Cmd + S: 快速备份
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            this.createBackup();
+          }
+        });
+      }
+
+      // ==================== 操作方法 ====================
+
+      // 创建工作区
+      createWorkspace() {
+        const name = prompt('请输入知识空间名称：');
+        if (!name || !name.trim()) return;
+
+        DataAPI.autoCreate.workspace(this.data, name.trim());
+        DataAPI.save(this.data);
+        this.render();
+        this.showToast(`创建知识空间 \"${name}\"`, 'success');
+      }
+
+      // 打开工作区
+      openWorkspace(id) {
+        // 设置激活状态
+        this.data.active.workspaceId = id;
+        this.data.active.bookId = null;
+        this.data.active.docId = null;
+        DataAPI.save(this.data);
+
+        // 跳转到编辑器页面
+        window.location.href = 'editor.html';
+      }
+
+      // 删除工作区
+      deleteWorkspace(id) {
+        const ws = this.data.workspaces.find(w => w.id === id);
+        if (!ws) return;
+
+        if (!confirm(`确定删除 \"${ws.name}\"？其中所有书本和文档都将被删除。`)) return;
+
+        if (DataAPI.deleteWorkspace(this.data, id)) {
+          this.render();
+          this.showToast('知识空间已删除', 'success');
+        }
+      }
+
+      // ==================== 备份和数据 ====================
+
+      autoBackup() {
+        // 每10个操作自动备份，或者每5分钟一次
+        // 这里使用随机检查，简化实现
+        if (Math.random() < 0.1) {
+          this.createBackup('auto');
+        }
+      }
+
+      showBackupManager() {
+        const html = UIRenderer.renderBackupManager();
+        document.body.insertAdjacentHTML('beforeend', html);
+
+        // 需要在这里hack一下，因为UIRenderer的模态框使用的是window.app
+        // 所以我们临时设置一下
+        if (!window.app) {
+          window.app = {
+            restoreBackup: (index) => this.restoreBackup(index),
+            deleteBackup: (index) => this.deleteBackup(index),
+            createBackup: () => this.createBackup(),
+            exportAllData: () => this.exportAllData(),
+            handleImport: (e) => this.handleImport(e),
+            closeModal: () => this.closeModal()
+          };
+        }
+      }
+
+      restoreBackup(index) {
+        const backupsRaw = localStorage.getItem('yuque-lite-backups');
+        if (!backupsRaw) return;
+
+        const backups = JSON.parse(backupsRaw);
+        if (index >= backups.length) return;
+
+        if (!confirm('恢复备份将覆盖当前数据，确定继续？')) return;
+
+        this.data = backups[index].data;
+        DataAPI.save(this.data);
+        this.render();
+        this.closeModal();
+        this.showToast('备份恢复成功', 'success');
+      }
+
+      deleteBackup(index) {
+        const backupsRaw = localStorage.getItem('yuque-lite-backups');
+        if (!backupsRaw) return;
+
+        const backups = JSON.parse(backupsRaw);
+        if (index >= backups.length) return;
+
+        if (!confirm('确定删除该备份？')) return;
+
+        backups.splice(index, 1);
+        localStorage.setItem('yuque-lite-backups', JSON.stringify(backups));
+
+        this.closeModal();
+        this.showBackupManager();
+        this.showToast('备份已删除', 'success');
+      }
+
+      exportAllData() {
+        const content = JSON.stringify(this.data, null, 2);
+        const timestamp = new Date().toISOString().substring(0, 10);
+        downloadFile(content, `yuque-lite-${timestamp}.json`, 'application/json');
+        this.showToast('完整数据已导出', 'success');
+      }
+
+      handleImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!confirm('导入数据将合并到当前数据，确定继续？')) {
+          event.target.value = '';
+          return;
+        }
+
+        readFile(file, (content) => {
+          try {
+            const importData = JSON.parse(content);
+
+            if (!importData.workspaces || !importData.user) {
+              throw new Error('无效的数据格式');
+            }
+
+            // 合并工作区（避免冲突）
+            importData.workspaces.forEach(ws => {
+              if (!this.data.workspaces.find(w => w.name === ws.name)) {
+                this.data.workspaces.push(ws);
+              } else {
+                if (!this.data.workspaces.find(w => w.id === ws.id)) {
+                  this.data.workspaces.push(ws);
+                }
+              }
+            });
+
+            DataAPI.save(this.data);
+            this.render();
+            this.closeModal();
+            this.showToast('数据导入成功', 'success');
+          } catch (error) {
+            this.showToast('数据格式错误: ' + error.message, 'error');
+          }
+
+          event.target.value = '';
+        });
+      }
+
+      // ==================== 统计 ====================
+
+      showStats() {
+        const stats = DataAPI.getStats(this.data);
+
+        const html = `
+          <div class="modal" data-modal="stats">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3>数据统计</h3>
+                <button onclick="app.closeModal()">
+                  <span class="iconify" data-icon="lucide:x" data-width="16"></span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="stats-grid stats-scroll" data-wheel-scroll="x">
+                  <div class="stat-card">
+                    <div class="stat-value" data-count="${stats.docCount}">${stats.docCount}</div>
+                    <div class="stat-label">总文档</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-value" data-count="${stats.wordCount}" data-format="word">${formatWordCount(stats.wordCount)}</div>
+                    <div class="stat-label">总字数</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-value" data-count="${stats.bookCount}">${stats.bookCount}</div>
+                    <div class="stat-label">书本</div>
+                  </div>
+                </div>
+                <h4>热门标签</h4>
+                <div class="tag-cloud" style="margin-top: 12px;">
+                  ${Object.entries(stats.tagMap).length ?
+                    Object.entries(stats.tagMap).map(([tag, count]) => `
+                      <span class="tag-item" style="font-size: ${12 + Math.min(count*2, 10)}px; background: var(--bg-contrast); border: 1px solid var(--border); padding: 4px 8px; border-radius: 4px; margin: 3px; display: inline-block; cursor: pointer;" onclick="app.filterByTag('${tag}')">${tag} (${count})</span>
+                    `).join('') :
+                    '<div style="color: var(--text-muted);">暂无标签</div>'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', html);
+        if (window.enableHorizontalWheelScroll) {
+          const modal = document.querySelector('[data-modal="stats"]');
+          window.enableHorizontalWheelScroll(modal);
+        }
+        if (window.animateCounts) {
+          const modal = document.querySelector('[data-modal="stats"]');
+          window.animateCounts(modal);
+        }
+      }
+
+      filterByTag(tag) {
+        // 在跳转前搜索
+        this.data.active.search = `tag:${tag}`;
+        DataAPI.save(this.data);
+        this.closeModal();
+        this.showToast(`已设置搜索: ${tag}`, 'info');
+      }
+
+      getMethodName(method) {
+        const names = {
+          'created': '最新创建',
+          'name': '名称',
+          'bookCount': '书本数量'
+        };
+        return names[method] || method;
+      }
+
+      formatRelative(dateStr) {
+        if (!dateStr) return '无更新';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = now - date;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        if (days === 0) return '今天更新';
+        if (days === 1) return '昨天更新';
+        if (days < 7) return `${days}天前更新`;
+        return `${Math.floor(days / 7)}周前更新`;
+      }
+
+      formatCreated(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString();
+      }
+    }
+
+    // 启动
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.localStorage || !window.customElements) {
+        alert('您的浏览器需要支持 LocalStorage 和 Web Components 才能使用本应用');
+        return;
+      }
+      window.app = new HomeApp();
+    });
+  </script>
 </body>
 </html>

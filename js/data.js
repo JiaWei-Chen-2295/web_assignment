@@ -7,7 +7,8 @@ const DataModel = {
   user: { theme: 'light', autoSave: true },
   workspaces: [],
   active: { workspaceId: null, bookId: null, docId: null, search: '' },
-  system: { version: '1.0.0' }
+  system: { version: '1.0.0' },
+  trash: { items: [] }
 };
 
 // 内部工具函数
@@ -17,6 +18,7 @@ const DataHelper = {
     return {
       id: uuid(),
       name: name,
+      icon: 'lucide:folder',
       description: '',
       books: [],
       created: new Date().toISOString()
@@ -24,7 +26,7 @@ const DataHelper = {
   },
 
   // 创建书本
-  createBook(title, icon = '📚', color = '#25B864') {
+  createBook(title, icon = 'lucide:book-open', color = '#25B864') {
     return {
       id: uuid(),
       title: title,
@@ -54,10 +56,10 @@ const DataHelper = {
 
   // 生成演示数据
   createDemoData() {
-    const workspace = this.createWorkspace('📚 我的知识空间');
+    const workspace = this.createWorkspace('我的知识空间');
 
-    const book1 = this.createBook('CSS 进阶', '🎨', '#61DAFB');
-    const book2 = this.createBook('JavaScript', '⚙️', '#F7DF1E');
+    const book1 = this.createBook('CSS 进阶', 'lucide:palette', '#61DAFB');
+    const book2 = this.createBook('JavaScript', 'lucide:code', '#F7DF1E');
 
     // 演示文档1
     const doc1 = this.createDoc('Grid布局指南', `# Grid 完全指南
@@ -143,7 +145,8 @@ async function getData() {
       system: {
         version: '1.0.0',
         created: new Date().toISOString()
-      }
+      },
+      trash: { items: [] }
     };
   }
 };
@@ -158,7 +161,27 @@ const DataAPI = {
       this.save(demo);
       return demo;
     }
-    return JSON.parse(raw);
+    const data = JSON.parse(raw);
+    let updated = false;
+    if (data && Array.isArray(data.workspaces)) {
+      data.workspaces.forEach(ws => {
+        if (ws.name === '📚 我的知识空间') {
+          ws.name = '我的知识空间';
+          updated = true;
+        }
+        if (!ws.icon) {
+          ws.icon = 'lucide:folder';
+          updated = true;
+        }
+      });
+    }
+    // 确保回收站数据结构存在
+    if (!data.trash) {
+      data.trash = { items: [] };
+      updated = true;
+    }
+    if (updated) this.save(data);
+    return data;
   },
 
   // 保存数据
@@ -273,13 +296,19 @@ const DataAPI = {
   getStats(data) {
     let docCount = 0, wordCount = 0, bookCount = 0;
     const tagMap = {};
+    const countWords = (content) => {
+      if (!content) return 0;
+      return content.trim().split(/\s+/).filter(w => w).length;
+    };
 
     data.workspaces.forEach(ws => {
       bookCount += ws.books.length;
       ws.books.forEach(book => {
         docCount += book.docs.length;
-        wordCount += book.docs.reduce((sum, d) => sum + (d.stats.words || 0), 0);
         book.docs.forEach(doc => {
+          const statsWords = doc?.stats?.words;
+          const computedWords = statsWords > 0 ? statsWords : countWords(doc.content);
+          wordCount += computedWords;
           doc.tags.forEach(tag => {
             tagMap[tag] = (tagMap[tag] || 0) + 1;
           });
@@ -321,12 +350,25 @@ const DataAPI = {
     return false;
   },
 
-  // 删除文档
+  // 删除文档（移至回收站）
   deleteDoc(data, docId) {
     for (let ws of data.workspaces) {
       for (let book of ws.books) {
         const index = book.docs.findIndex(d => d.id === docId);
         if (index !== -1) {
+          const doc = book.docs[index];
+          // 移至回收站
+          data.trash.items.push({
+            id: uuid(),
+            type: 'doc',
+            item: { ...doc },
+            bookId: book.id,
+            bookTitle: book.title,
+            workspaceId: ws.id,
+            workspaceName: ws.name,
+            deletedAt: new Date().toISOString()
+          });
+          
           book.docs.splice(index, 1);
           book.stats.docCount--;
           // 更新书本字数统计
@@ -345,11 +387,22 @@ const DataAPI = {
     return false;
   },
 
-  // 删除书本
+  // 删除书本（移至回收站）
   deleteBook(data, bookId) {
     for (let ws of data.workspaces) {
       const index = ws.books.findIndex(b => b.id === bookId);
       if (index !== -1) {
+        const book = ws.books[index];
+        // 移至回收站
+        data.trash.items.push({
+          id: uuid(),
+          type: 'book',
+          item: { ...book },
+          workspaceId: ws.id,
+          workspaceName: ws.name,
+          deletedAt: new Date().toISOString()
+        });
+        
         ws.books.splice(index, 1);
 
         // 清理激活状态
@@ -365,10 +418,19 @@ const DataAPI = {
     return false;
   },
 
-  // 删除工作区
+  // 删除工作区（移至回收站）
   deleteWorkspace(data, wsId) {
     const index = data.workspaces.findIndex(w => w.id === wsId);
     if (index !== -1) {
+      const ws = data.workspaces[index];
+      // 移至回收站
+      data.trash.items.push({
+        id: uuid(),
+        type: 'workspace',
+        item: { ...ws },
+        deletedAt: new Date().toISOString()
+      });
+      
       data.workspaces.splice(index, 1);
 
       // 清理激活状态
@@ -382,5 +444,143 @@ const DataAPI = {
       return true;
     }
     return false;
+  },
+
+  // 排序功能 - 工作区
+  sortWorkspaces(data, method = 'created') {
+    const sorted = [...data.workspaces];
+
+    switch(method) {
+      case 'name': // 按名称
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'bookCount': // 按书本数量
+        return sorted.sort((a, b) => (b.books?.length || 0) - (a.books?.length || 0));
+      case 'created': // 按创建时间（倒序）
+      default:
+        return sorted.sort((a, b) => new Date(b.created) - new Date(a.created));
+    }
+  },
+
+  // 排序功能 - 书本
+  sortBooks(books, method = 'title') {
+    const sorted = [...books];
+
+    switch(method) {
+      case 'docCount': // 按文档数量
+        return sorted.sort((a, b) => (b.docs?.length || 0) - (a.docs?.length || 0));
+      case 'updated': // 按更新时间
+        return sorted.sort((a, b) => new Date(b.stats.lastUpdated) - new Date(a.stats.lastUpdated));
+      case 'title': // 按标题
+      default:
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+    }
+  },
+
+  // 排序功能 - 文档
+  sortDocs(docs, method = 'updated') {
+    const sorted = [...docs];
+
+    switch(method) {
+      case 'title': // 按标题
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'created': // 按创建时间
+        return sorted.sort((a, b) => new Date(b.created) - new Date(a.created));
+      case 'status': // 按状态（发布优先）
+        return sorted.sort((a, b) => a.status === 'published' ? -1 : 1);
+      case 'words': // 按字数
+        return sorted.sort((a, b) => (b.stats.words || 0) - (a.stats.words || 0));
+      case 'updated': // 按更新时间（默认）
+      default:
+        return sorted.sort((a, b) => new Date(b.updated) - new Date(a.updated));
+    }
+  },
+
+  // 获取排序后的工作区列表（带工作区统计数据）
+  getSortedWorkspacesWithStats(data, method = 'created') {
+    const workspaces = this.sortWorkspaces(data, method);
+
+    return workspaces.map(ws => ({
+      id: ws.id,
+      name: ws.name,
+      icon: ws.icon,
+      description: ws.description,
+      created: ws.created,
+      bookCount: ws.books?.length || 0,
+      docCount: ws.books?.reduce((sum, book) => sum + (book.docs?.length || 0), 0),
+      lastUpdated: ws.books?.reduce((latest, book) => {
+        const bookLast = book.docs?.reduce((bookLatest, doc) =>
+          bookLatest && new Date(bookLatest) > new Date(doc.updated) ? bookLatest : doc.updated, null);
+        return latest && new Date(latest) > new Date(bookLast) ? latest : bookLast;
+      }, null)
+    }));
+  },
+
+  // ==================== 回收站功能 ====================
+  
+  // 从回收站恢复项目
+  restoreFromTrash(data, trashItemId) {
+    const index = data.trash.items.findIndex(t => t.id === trashItemId);
+    if (index === -1) return false;
+
+    const trashItem = data.trash.items[index];
+    
+    if (trashItem.type === 'doc') {
+      // 恢复文档
+      const book = this.findBook(data, trashItem.bookId);
+      if (!book) {
+        // 书本不存在了，无法恢复
+        return false;
+      }
+      book.docs.unshift(trashItem.item);
+      book.stats.docCount++;
+      book.stats.wordCount = book.docs.reduce((sum, d) => sum + (d.stats.words || 0), 0);
+    } else if (trashItem.type === 'book') {
+      // 恢复书本
+      const ws = this.findWorkspace(data, trashItem.workspaceId);
+      if (!ws) {
+        // 工作区不存在了，无法恢复
+        return false;
+      }
+      ws.books.push(trashItem.item);
+    } else if (trashItem.type === 'workspace') {
+      // 恢复工作区
+      data.workspaces.push(trashItem.item);
+    }
+
+    // 从回收站移除
+    data.trash.items.splice(index, 1);
+    this.save(data);
+    return true;
+  },
+
+  // 从回收站永久删除
+  permanentDelete(data, trashItemId) {
+    const index = data.trash.items.findIndex(t => t.id === trashItemId);
+    if (index !== -1) {
+      data.trash.items.splice(index, 1);
+      this.save(data);
+      return true;
+    }
+    return false;
+  },
+
+  // 清空回收站
+  emptyTrash(data) {
+    data.trash.items = [];
+    this.save(data);
+  },
+
+  // 获取回收站统计
+  getTrashStats(data) {
+    const stats = { total: 0, docs: 0, books: 0, workspaces: 0 };
+    data.trash.items.forEach(item => {
+      stats.total++;
+      if (item.type === 'doc') stats.docs++;
+      else if (item.type === 'book') stats.books++;
+      else if (item.type === 'workspace') stats.workspaces++;
+    });
+    return stats;
   }
 };
+
+globalThis.DataAPI = DataAPI;

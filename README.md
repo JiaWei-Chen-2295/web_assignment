@@ -209,7 +209,7 @@ git add -A && git commit -m "feat: 完整项目上线"
 
 ---
 
-**开发者**：Your Name
+**开发者**：JavierChen ZiYang Li
 **完成时间**：2024年12月
 **项目类型**：大学 Web 开发大作业
 **代码纯度**：100% 原生 JavaScript，零依赖！

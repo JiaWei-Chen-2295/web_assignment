@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>语雀 Lite - 回收站</title>
+  <meta name="description" content="回收站管理">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <!-- Iconify 图标库 -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+  <style>
+    body { overflow-y: auto; }
+    .trash-page {
+      min-height: calc(100vh - 60px);
+      padding: 20px;
+      background: var(--bg-contrast);
+    }
+    .trash-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .trash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .trash-header h2 {
+      font-size: 20px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .trash-stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: var(--bg-contrast);
+      border-radius: 4px;
+      flex-wrap: nowrap;
+    }
+    .stat-item {
+      flex: 1;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .trash-actions {
+      margin-bottom: 16px;
+    }
+    .trash-list {
+      max-height: calc(100vh - 350px);
+      overflow-y: auto;
+    }
+    .trash-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 10px;
+      background: var(--bg);
+      transition: all 0.2s;
+    }
+    .trash-item:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-contrast);
+    }
+    .trash-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .trash-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .trash-item-title {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .trash-item-type {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg-contrast);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .trash-item-location {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .trash-item-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .trash-item-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+    .empty-text {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="left">
+      <span class="logo" onclick="window.location.href = 'index.html'">
+        <span class="iconify" data-icon="lucide:book-open" data-width="20"></span> 语雀 Lite
+      </span>
+      <span class="btn" style="cursor: default;">
+        <span class="iconify" data-icon="lucide:trash-2" data-width="16"></span> 回收站
+      </span>
+    </div>
+    <div class="right">
+      <button onclick="app.toggleTheme()" class="btn" data-tooltip="切换主题">
+        <span class="iconify" data-icon="lucide:moon" data-width="16"></span>
+      </button>
+      <button onclick="window.location.href='editor.html'" class="btn" data-tooltip="返回编辑器">
+        <span class="iconify" data-icon="lucide:edit-3" data-width="16"></span>
+      </button>
+      <button onclick="window.location.href='index.html'" class="btn" data-tooltip="返回主页">
+        <span class="iconify" data-icon="lucide:home" data-width="16"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="trash-page">
+    <div class="trash-container">
+      <div class="trash-header">
+        <h2>
+          <span class="iconify" data-icon="lucide:trash-2" data-width="24"></span>
+          回收站
+        </h2>
+      </div>
+
+      <div class="trash-stats stats-scroll" data-wheel-scroll="x" id="trash-stats">
+        <!-- 统计信息将动态填充 -->
+      </div>
+
+      <div class="trash-actions" id="trash-actions">
+        <!-- 操作按钮将动态填充 -->
+      </div>
+
+      <div class="trash-list" id="trash-list">
+        <!-- 回收站项目列表将动态填充 -->
+      </div>
+    </div>
+  </main>
+
+  <toast-notification id="toast"></toast-notification>
+
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app-base.js"></script>
+  <script src="js/components/toast-notification.js"></script>
+
+  <script>
+    class TrashApp extends AppBase {
+      constructor() {
+        super();
+        this.data = DataAPI.load();
+        this.toast = document.getElementById('toast');
+        this.applyTheme();
+        this.render();
+      }
+
+      render() {
+        this.renderStats();
+        this.renderActions();
+        this.renderList();
+      }
+
+      renderStats() {
+        const stats = DataAPI.getTrashStats(this.data);
+        const statsEl = document.getElementById('trash-stats');
+        
+        statsEl.innerHTML = `
+          <div class="stat-item">
+            <div class="stat-value" data-count="${stats.total}">${stats.total}</div>
+            <div class="stat-label">总数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" data-count="${stats.docs}">${stats.docs}</div>
+            <div class="stat-label">文档</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" data-count="${stats.books}">${stats.books}</div>
+            <div class="stat-label">书本</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" data-count="${stats.workspaces}">${stats.workspaces}</div>
+            <div class="stat-label">工作区</div>
+          </div>
+        `;
+        if (window.enableHorizontalWheelScroll) {
+          window.enableHorizontalWheelScroll(statsEl);
+        }
+        if (window.animateCounts) {
+          window.animateCounts(statsEl);
+        }
+      }
+
+      renderActions() {
+        const stats = DataAPI.getTrashStats(this.data);
+        const actionsEl = document.getElementById('trash-actions');
+        
+        if (stats.total > 0) {
+          actionsEl.innerHTML = `
+            <button class="btn btn-danger" onclick="app.emptyTrash()" style="width: 100%;">
+              <span class="iconify" data-icon="lucide:trash-2" data-width="14"></span> 清空回收站
+            </button>
+          `;
+        } else {
+          actionsEl.innerHTML = '';
+        }
+      }
+
+      renderList() {
+        const listEl = document.getElementById('trash-list');
+        const items = this.data.trash.items || [];
+
+        if (items.length === 0) {
+          listEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">
+                <span class="iconify" data-icon="lucide:trash-2" data-width="64"></span>
+              </div>
+              <div class="empty-text">回收站为空</div>
+            </div>
+          `;
+          return;
+        }
+
+        // 按删除时间倒序排列
+        const sortedItems = [...items].sort((a, b) => 
+          new Date(b.deletedAt) - new Date(a.deletedAt)
+        );
+
+        listEl.innerHTML = sortedItems.map(item => this.renderItem(item)).join('');
+      }
+
+      renderItem(item) {
+        const typeIcon = {
+          'doc': 'lucide:file-text',
+          'book': 'lucide:book-open',
+          'workspace': 'lucide:folder'
+        }[item.type];
+
+        const typeName = {
+          'doc': '文档',
+          'book': '书本',
+          'workspace': '工作区'
+        }[item.type];
+
+        const title = escapeHTML(item.item.title || item.item.name || '未命名');
+        const deletedTime = new Date(item.deletedAt).toLocaleString();
+
+        let locationInfo = '';
+        if (item.type === 'doc') {
+          locationInfo = `位置: ${escapeHTML(item.workspaceName)} / ${escapeHTML(item.bookTitle)}`;
+        } else if (item.type === 'book') {
+          locationInfo = `位置: ${escapeHTML(item.workspaceName)}`;
+        }
+
+        return `
+          <div class="trash-item">
+            <div class="trash-item-content">
+              <div class="trash-item-header">
+                <span class="iconify" data-icon="${typeIcon}" data-width="16" style="color: var(--text-muted);"></span>
+                <span class="trash-item-title">${title}</span>
+                <span class="trash-item-type">${typeName}</span>
+              </div>
+              ${locationInfo ? `<div class="trash-item-location">${locationInfo}</div>` : ''}
+              <div class="trash-item-time">删除时间: ${deletedTime}</div>
+            </div>
+            <div class="trash-item-actions">
+              <button class="btn" onclick="app.restore('${item.id}')">
+                <span class="iconify" data-icon="lucide:undo-2" data-width="14"></span> 恢复
+              </button>
+              <button class="btn btn-danger" onclick="app.permanentDelete('${item.id}')">
+                <span class="iconify" data-icon="lucide:trash-2" data-width="14"></span> 永久删除
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      restore(trashItemId) {
+        if (DataAPI.restoreFromTrash(this.data, trashItemId)) {
+          this.showToast('恢复成功', 'success');
+          this.render();
+        } else {
+          this.showToast('恢复失败，原位置已不存在', 'error');
+        }
+      }
+
+      permanentDelete(trashItemId) {
+        if (!confirm('确定永久删除该项目？此操作不可恢复！')) return;
+        
+        if (DataAPI.permanentDelete(this.data, trashItemId)) {
+          this.showToast('已永久删除', 'success');
+          this.render();
+        }
+      }
+
+      emptyTrash() {
+        if (!confirm('确定清空回收站？所有项目将被永久删除！')) return;
+        
+        DataAPI.emptyTrash(this.data);
+        this.showToast('回收站已清空', 'success');
+        this.render();
+      }
+    }
+
+    // 启动应用
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.localStorage) {
+        alert('您的浏览器需要支持 LocalStorage 才能使用本应用');
+        return;
+      }
+      window.app = new TrashApp();
+    });
+  </script>
+</body>
+</html>

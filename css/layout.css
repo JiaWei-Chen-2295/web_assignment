@@ -1,15 +1,14 @@
-/* 现代清爽布局 */
+/* 极简布局 */
 
 /* 顶部工具栏 */
 .toolbar {
   height: 60px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border-light);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  box-shadow: var(--shadow-sm);
+  padding: 0 20px;
   z-index: 10;
   position: relative;
 }
@@ -17,112 +16,60 @@
 .toolbar .left,
 .toolbar .right {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
 .toolbar .logo {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--primary);
-  letter-spacing: 0.5px;
+  color: var(--text);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.toolbar .logo::before {
-  content: "✦";
-  color: var(--primary);
-  font-size: 20px;
+  margin-right: 12px;
 }
 
 /* 主布局 */
 .app-layout {
   height: calc(100vh - 60px);
   display: grid;
-  grid-template-columns: 260px 280px 1fr;
+  grid-template-columns: 280px 1fr;
   overflow: hidden;
 }
 
-.panel-left {
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-light);
+.panel-left,
+.panel-center,
+.panel-main {
+  background: var(--bg);
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.panel-center {
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-light);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  border-right: 1px solid var(--border);
 }
 
 .panel-main {
-  background: var(--bg-panel);
-  overflow-y: auto;
-  position: relative;
+  border-right: none;
 }
 
-/* 滚动条美化 */
+/* 极简滚动条 */
 .panel-left::-webkit-scrollbar,
 .panel-center::-webkit-scrollbar,
 .panel-main::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.panel-left::-webkit-scrollbar-track,
-.panel-center::-webkit-scrollbar-track,
-.panel-main::-webkit-scrollbar-track {
-  background: transparent;
+  width: 4px;
 }
 
 .panel-left::-webkit-scrollbar-thumb,
 .panel-center::-webkit-scrollbar-thumb,
 .panel-main::-webkit-scrollbar-thumb {
-  background: var(--border-light);
-  border-radius: 3px;
-}
-
-.panel-left::-webkit-scrollbar-thumb:hover,
-.panel-center::-webkit-scrollbar-thumb:hover,
-.panel-main::-webkit-scrollbar-thumb:hover {
-  background: var(--border-medium);
+  background: var(--border);
+  border-radius: 2px;
 }
 
 /* 响应式 */
-@media (max-width: 1200px) {
-  .app-layout {
-    grid-template-columns: 240px 260px 1fr;
-  }
-}
-
 @media (max-width: 1024px) {
-  .app-layout {
-    grid-template-columns: 240px 1fr;
-  }
-  .panel-center {
-    display: none;
-  }
+  .app-layoutGrid { grid-template-columns: 240px 1fr; }
+  .panel-center { display: none; }
 }
 
 @media (max-width: 768px) {
-  .app-layout {
-    grid-template-columns: 1fr;
-  }
-  .toolbar {
-    padding: 0 16px;
-  }
-  .panel-left {
-    display: none;
-  }
-  .toolbar .logo {
-    font-size: 16px;
-  }
+  .app-layout { grid-template-columns: 1fr; }
+  .toolbar { padding: 0 16px; }
+  .panel-left { display: none; }
 }

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>语雀 Lite - 编辑器</title>
+  <meta name="description" content="文档编辑器">
+
+  <!-- 样式引入 -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <!-- Iconify 图标库 -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+</head>
+<body>
+  <!-- 顶部工具栏 -->
+  <header class="toolbar">
+    <div class="left">
+      <span class="logo" onclick="window.location.href = 'index.html'">
+        <span class="iconify" data-icon="lucide:book-open" data-width="20"></span> 语雀 Lite
+      </span>
+      <button onclick="app.showStats()" class="btn" data-tooltip="数据统计">
+        <span class="iconify" data-icon="lucide:bar-chart-3" data-width="16"></span> 统计
+      </button>
+    </div>
+    <div class="right">
+      <button onclick="window.location.href='trash.html'" class="btn" data-tooltip="回收站">
+        <span class="iconify" data-icon="lucide:trash-2" data-width="16"></span>
+      </button>
+      <button onclick="app.showTemplates()" class="btn" data-tooltip="文档模板">
+        <span class="iconify" data-icon="lucide:file-text" data-width="16"></span> 模板
+      </button>
+      <button onclick="window.location.href='snippets.html'" class="btn" data-tooltip="小记素材">
+        <span class="iconify" data-icon="lucide:sticky-note" data-width="16"></span> 小记
+      </button>
+      <button onclick="window.location.href='qa.html'" class="btn" data-tooltip="知识库问答">
+        <span class="iconify" data-icon="lucide:messages-square" data-width="16"></span>
+      </button>
+      <button onclick="app.toggleTheme()" class="btn" data-tooltip="切换主题">
+        <span class="iconify" data-icon="lucide:moon" data-width="16"></span>
+      </button>
+      <button onclick="app.createBackup()" class="btn" data-tooltip="创建备份">
+        <span class="iconify" data-icon="lucide:save" data-width="16"></span>
+      </button>
+      <button onclick="app.backToHome()" class="btn" data-tooltip="返回主页">
+        <span class="iconify" data-icon="lucide:home" data-width="16"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主布局 - 使用 Web Components -->
+  <main class="app-layout">
+    <book-list-panel id="center-panel" class="panel-center"></book-list-panel>
+    <editor-panel id="main-panel" class="panel-main"></editor-panel>
+  </main>
+
+  <!-- Toast 通知组件 -->
+  <toast-notification id="toast"></toast-notification>
+
+  <!-- 脚本引入（按需顺序） -->
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app-base.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/search.js"></script>
+
+  <!-- Web Components -->
+  <script src="js/components/book-list-panel.js"></script>
+  <script src="js/components/editor-panel.js"></script>
+  <script src="js/components/toast-notification.js"></script>
+
+  <!-- 辅助渲染器 -->
+  <script src="js/ui-renderer.js"></script>
+  <script src="js/templates.js"></script>
+
+  <!-- 编辑器应用逻辑 -->
+  <script>
+    class EditorApp extends AppBase {
+      constructor() {
+        super();
+        this.components = {};
+        this.markdownRenderer = null;
+        this.init();
+      }
+
+      init() {
+        try {
+          // 1. 检查是否有激活的工作区
+          this.data = DataAPI.load();
+
+          if (!this.data.active.workspaceId && this.data.workspaces.length > 0) {
+            // 如果没有激活的工作区，默认选择第一个
+            this.data.active.workspaceId = this.data.workspaces[0].id;
+            DataAPI.save(this.data);
+          }
+
+          // 2. 获取组件引用
+          this.components = {
+            center: document.getElementById('center-panel'),
+            main: document.getElementById('main-panel'),
+            toast: document.getElementById('toast')
+          };
+          this.toast = this.components.toast;
+
+          // 3. 设置 Markdown 渲染器
+          this.markdownRenderer = MarkdownRenderer;
+          if (this.components.main) {
+            this.components.main.setMarkdownRenderer(this.markdownRenderer);
+          }
+
+          // 4. 绑定事件
+          this.bindEvents();
+
+          // 5. 首次渲染
+          this.render();
+
+          // 6. 应用主题
+          this.applyTheme();
+
+          // 7. 快捷键
+          this.bindShortcuts();
+
+          // 8. 提示
+          setTimeout(() => {
+            this.showToast('编辑器已就绪', 'success');
+          }, 300);
+
+        } catch (error) {
+          console.error('初始化失败:', error);
+          alert('初始化失败: ' + error.message + '\n点击确定将返回主页');
+          window.location.href = 'index.html';
+        }
+      }
+
+      bindEvents() {
+        // 绑定书本列表面板
+        this.components.center.addEventListener('create-book', () => this.createBook());
+        this.components.center.addEventListener('toggle-book', (e) => this.toggleBook(e.detail.id));
+        this.components.center.addEventListener('switch-doc', (e) => this.switchDoc(e.detail.bookId, e.detail.docId));
+        this.components.center.addEventListener('create-doc', (e) => this.createDoc(e.detail.bookId));
+        this.components.center.addEventListener('search', (e) => this.handleSearch(e.detail.keyword));
+        this.components.center.addEventListener('clear-search', () => this.clearSearch());
+
+        // 绑定编辑器面板
+        this.components.main.addEventListener('update-title', (e) => this.updateDocTitle(e.detail.title));
+        this.components.main.addEventListener('editor-input', (e) => this.handleEditorInput(e.detail.content));
+        this.components.main.addEventListener('save', () => this.saveDoc());
+        this.components.main.addEventListener('toggle-status', () => this.toggleCurrentDocStatus());
+        this.components.main.addEventListener('add-tag', () => this.addTag());
+        this.components.main.addEventListener('export', () => this.exportDoc());
+        this.components.main.addEventListener('delete', () => this.deleteCurrentDoc());
+        this.components.main.addEventListener('create-doc', () => this.createDoc());
+        this.components.main.addEventListener('preview-toggled', (e) => {
+          console.log('Preview mode:', e.detail.isPreview);
+        });
+      }
+
+      render() {
+        if (this.components.center) {
+          this.components.center.data = this.data;
+
+          if (this.data.active.search && this.data.active.search.length >= 2) {
+            const results = SearchEngine.search(this.data, this.data.active.search);
+            this.components.center.searchResults = results;
+          } else {
+            this.components.center.searchResults = null;
+          }
+        }
+
+        if (this.components.main) this.components.main.data = this.data;
+      }
+
+      // ==================== 操作方法 ====================
+
+      createWorkspace() {
+        const name = prompt('请输入工作区名称：');
+        if (!name || !name.trim()) return;
+
+        DataAPI.autoCreate.workspace(this.data, name.trim());
+        this.render();
+        this.showToast(`创建工作区 \"${name}\"`, 'success');
+      }
+
+      switchWorkspace(id) {
+        this.data.active.workspaceId = id;
+        this.data.active.bookId = null;
+        this.data.active.docId = null;
+        this.data.active.search = '';
+        DataAPI.save(this.data);
+        this.render();
+      }
+
+      deleteWorkspace(id) {
+        const ws = this.data.workspaces.find(w => w.id === id);
+        if (!ws) return;
+
+        const msg = `确定删除 "${ws.name}"？\n其中所有书本和文档都将被删除。`;
+        if (!confirm(msg)) return;
+
+        if (DataAPI.deleteWorkspace(this.data, id)) {
+          this.data.active.workspaceId = this.data.workspaces[0]?.id || null;
+          this.data.active.bookId = null;
+          this.data.active.docId = null;
+          DataAPI.save(this.data);
+          this.render();
+          this.showToast('知识空间已删除', 'success');
+        }
+      }
+
+      createBook() {
+        if (!this.data.active.workspaceId) {
+          return this.showToast('请先选择一个工作区', 'warning');
+        }
+
+        const name = prompt('请输入书本名称：');
+        if (!name || !name.trim()) return;
+
+        DataAPI.autoCreate.book(this.data, this.data.active.workspaceId, name.trim());
+        this.render();
+        this.showToast(`创建书本 \"${name}\"`, 'success');
+      }
+
+      toggleBook(id) {
+        this.data.active.bookId = this.data.active.bookId === id ? null : id;
+        this.render();
+      }
+
+      createDoc(bookId = null) {
+        const targetBook = bookId || this.data.active.bookId;
+
+        if (!targetBook) {
+          return this.showToast('请先选择一个书本', 'warning');
+        }
+
+        const title = prompt('请输入文档标题：');
+        if (!title || !title.trim()) return;
+
+        const doc = DataAPI.autoCreate.doc(this.data, targetBook, title.trim());
+        if (doc) {
+          this.render();
+          this.showToast(`创建文档 \"${title}\"`, 'success');
+        }
+      }
+
+      switchDoc(bookId, docId) {
+        this.data.active.bookId = bookId;
+        this.data.active.docId = docId;
+        this.render();
+      }
+
+      updateDocTitle(title) {
+        const doc = this.getCurrentDoc();
+        if (!doc) return;
+
+        DataAPI.updateDocTitle(this.data, doc.id, title.trim());
+      }
+
+      handleEditorInput = debounce(function(content) {
+        const doc = this.getCurrentDoc();
+        if (!doc) return;
+
+        DataAPI.updateDoc(this.data, doc.id, content);
+
+        const docData = this.getCurrentDoc();
+        if (docData && this.components.main) {
+          this.components.main.updateStats(
+            docData.stats.words,
+            docData.stats.estimatedTime,
+            docData.status,
+            docData.tags,
+            formatDate(docData.updated)
+          );
+        }
+      }, 500);
+
+      saveDoc() {
+        DataAPI.save(this.data);
+        // 刷新面板以显示更新时间
+        if (this.components.main) {
+          this.components.main.data = this.data;
+        }
+        this.showToast('文档已保存', 'success');
+      }
+
+      toggleCurrentDocStatus() {
+        const doc = this.getCurrentDoc();
+        if (!doc) return;
+
+        const newStatus = DataAPI.toggleDocStatus(this.data, doc.id);
+        if (newStatus) {
+          this.render();
+          const statusText = newStatus === 'published' ? '已发布' : '草稿';
+          this.showToast(`状态切换为: ${statusText}`, 'info');
+        }
+      }
+
+      deleteCurrentDoc() {
+        if (!confirm('确定删除当前文档？')) return;
+
+        const doc = this.getCurrentDoc();
+        if (doc && DataAPI.deleteDoc(this.data, doc.id)) {
+          this.render();
+          this.showToast('文档已删除', 'success');
+        }
+      }
+
+      addTag() {
+        const doc = this.getCurrentDoc();
+        if (!doc) return;
+
+        const tag = prompt('请输入标签名称：');
+        if (!tag || !tag.trim()) return;
+
+        if (DataAPI.addTagToDoc(this.data, doc.id, tag.trim())) {
+          this.render();
+          this.showToast(`添加标签 \"${tag}\"`, 'success');
+        }
+      }
+
+      handleSearch = debounce(function(keyword) {
+        this.data.active.search = keyword;
+        DataAPI.save(this.data);
+
+        if (keyword.length < 2) {
+          this.render();
+          return;
+        }
+
+        const results = SearchEngine.search(this.data, keyword);
+        if (this.components.center) {
+          this.components.center.searchResults = results;
+        }
+      }, 300);
+
+      clearSearch() {
+        this.data.active.search = '';
+        DataAPI.save(this.data);
+        this.render();
+      }
+
+      // ==================== 搜索操作 ====================
+
+      exportDoc() {
+        const doc = this.getCurrentDoc();
+        if (!doc) return;
+
+        const content = `# ${doc.title}\n\n` +
+                        `> 创建: ${formatDate(doc.created)}\n` +
+                        `> 更新: ${formatDate(doc.updated)}\n` +
+                        `> 标签: ${doc.tags.join(', ') || '无'}\n` +
+                        `> 字数: ${doc.stats.words} | 阅读: ${doc.stats.estimatedTime}分钟\n\n` +
+                        `---\n\n` +
+                        doc.content;
+
+        downloadFile(content, `${doc.title}.md`, 'text/markdown');
+        this.showToast('文档已导出', 'success');
+      }
+
+      // ==================== 模板系统 ====================
+
+      showTemplates() {
+        const templates = Templates.defaults;
+        const html = UIRenderer.renderTemplateSelector(templates);
+        document.body.insertAdjacentHTML('beforeend', html);
+
+        if (!window.app) {
+          window.app = this;
+        }
+      }
+
+      showTemplateForm(id) {
+        const template = Templates.getTemplateById(id);
+        if (!template) return;
+
+        this.closeModal();
+        const html = UIRenderer.renderTemplateForm(template);
+        document.body.insertAdjacentHTML('beforeend', html);
+      }
+
+      useTemplate(id) {
+        if (!this.data.active.bookId) {
+          this.showToast('请先选择一个书本', 'warning');
+          return;
+        }
+
+        const template = Templates.getTemplateById(id);
+        if (!template) return;
+
+        const variables = {};
+        const varMatches = template.content.match(/\{\{(\w+)\}\}/g) || [];
+        const uniqueVars = [...new Set(varMatches.map(m => m.slice(2, -2)))];
+
+        uniqueVars.forEach(v => {
+          const input = document.getElementById(`var-${v}`);
+          if (input) {
+            variables[v] = input.value || Templates.varLabel(v);
+          }
+        });
+
+        const content = Templates.fillTemplate(id, variables);
+        const docTitle = template.name + ' - ' + (variables.name || variables.book_name || new Date().toLocaleDateString());
+
+        const doc = DataAPI.autoCreate.doc(this.data, this.data.active.bookId, docTitle);
+        if (doc) {
+          DataAPI.updateDoc(this.data, doc.id, content);
+          this.render();
+          this.closeModal();
+          this.showToast(`模板文档 \"${docTitle}\" 已创建`, 'success');
+        }
+      }
+
+      // ==================== 统计 ====================
+
+      showStats() {
+        UIRenderer.renderStats(this.data);
+      }
+
+      // ==================== 辅助 ====================
+
+      getCurrentDoc() {
+        if (!this.data) return null;
+        return DataAPI.findDoc(this.data, this.data.active.docId);
+      }
+
+      // 返回主页
+      backToHome() {
+        if (confirm('返回主页将返回知识空间列表，是否继续？')) {
+          window.location.href = 'index.html';
+        }
+      }
+
+      // 键盘快捷键
+      bindShortcuts() {
+        document.addEventListener('keydown', (e) => {
+          // Ctrl/Cmd + S: 保存
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            this.saveDoc();
+          }
+
+          // Ctrl/Cmd + P: 预览
+          if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+            e.preventDefault();
+            if (this.components.main) {
+              this.components.main.togglePreview();
+            }
+          }
+
+          // Ctrl/Cmd + K: 搜索
+          if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const input = this.components.center?.shadowRoot?.querySelector('.search-input');
+            if (input) input.focus();
+          }
+
+          // Ctrl/Cmd + N: 新建文档
+          if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            this.createDoc();
+          }
+
+          // Ctrl/Cmd + B: 主题
+          if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+            this.toggleTheme();
+          }
+
+          // Esc: 关闭模态框
+          if (e.key === 'Escape') {
+            this.closeModal();
+            this.clearSearch();
+          }
+
+          // Ctrl/Cmd + H: 回主页
+          if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+            e.preventDefault();
+            this.backToHome();
+          }
+        });
+      }
+    }
+
+    // 启动应用
+    document.addEventListener('DOMContentLoaded', () => {
+      // 检查浏览器支持
+      if (!window.localStorage || !window.customElements) {
+        alert('您的浏览器需要支持 LocalStorage 和 Web Components 才能使用本应用');
+        return;
+      }
+
+      // 启动应用实例
+      window.app = new EditorApp();
+    });
+  </script>
+</body>
+</html>
